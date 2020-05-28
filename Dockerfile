@@ -1,12 +1,25 @@
-FROM ruby:2.3.1
+FROM ruby:2.7
 
-RUN printf "deb http://archive.debian.org/debian/ jessie main\ndeb-src http://archive.debian.org/debian/ jessie main\ndeb http://security.debian.org jessie/updates main\ndeb-src http://security.debian.org jessie/updates main" > /etc/apt/sources.list
+RUN mkdir /build
+WORKDIR /build
+
+RUN wget https://download.oracle.com/otn_software/linux/instantclient/19600/instantclient-basic-linux.x64-19.6.0.0.0dbru.zip && wget https://download.oracle.com/otn_software/linux/instantclient/19600/instantclient-sdk-linux.x64-19.6.0.0.0dbru.zip && wget https://download.oracle.com/otn_software/linux/instantclient/19600/instantclient-sqlplus-linux.x64-19.6.0.0.0dbru.zip
+RUN unzip instantclient-basic-linux.x64-19.6.0.0.0dbru.zip && unzip instantclient-sdk-linux.x64-19.6.0.0.0dbru.zip && unzip instantclient-sqlplus-linux.x64-19.6.0.0.0dbru.zip
+RUN mkdir -p /opt/oracle && cp -a instantclient_19_6 /opt/oracle/
+
+WORKDIR /
+RUN rm -rf /build
+
+RUN apt-get update && apt-get install -y libaio1
+RUN echo "/opt/oracle/instantclient_19_6" > /etc/ld.so.conf.d/zzz_oci.conf && ldconfig
+
 RUN apt-get update && apt-get install -y --no-install-recommends apt-utils
 RUN apt-get update && \
     apt-get -y install nodejs && \
     apt-get -y clean
 RUN gem update --system
-RUN gem install bundler smashing
+RUN gem install bundler smashing ruby-oci8
+
 RUN mkdir /smashing && \
     smashing new smashing && \
     cd /smashing && \
@@ -31,4 +44,3 @@ EXPOSE $PORT
 WORKDIR /smashing
 
 CMD ["/run.sh"]
-
